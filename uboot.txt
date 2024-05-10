@@ -1,0 +1,24 @@
+fdt addr ${fdt_addr}
+fdt get value bootargs_orig /chosen bootargs
+mmc dev 0
+
+#Żółta dioda powinna zasygnalizować, że za chwilę zostaną sprawdzone przycisk
+
+gpio set 22
+sleep 1
+gpio clear 22
+
+
+if gpio input 10 ; then
+    fatload mmc 0:1 ${kernel_addr_r} /user/Image.std
+    #(doesn't work for RPi) load mmc 0:1 ${fdt_addr_r} bcm2711-rpi-4-b.dtb
+    setenv bootargs "${bootargs_orig} console=ttyAMA0 root=/dev/mmcblk0p2 rootwait"
+    #(doesn't work for RPi) booti ${kernel_addr_r} - ${fdt_addr_r}
+    booti ${kernel_addr_r} - ${fdt_addr} # use patched DT!
+    gpio set 23
+else
+    fatload mmc 0:1 ${kernel_addr_r} /user/Image.initramfs
+    setenv bootargs "${bootargs_orig} console=ttyAMA0"
+    booti ${kernel_addr_r} - ${fdt_addr} # use patched DT!
+    gpio set 27
+fi
